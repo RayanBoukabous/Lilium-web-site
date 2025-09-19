@@ -3,6 +3,7 @@ import { Button, IconButton, useTheme, Box, Typography, alpha } from '@mui/mater
 import { motion } from 'framer-motion';
 import { ShoppingCart, Plus, Minus, Check } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { useTranslation } from '../i18n';
 import type { Product } from '../types';
 
 interface AddToCartButtonProps {
@@ -26,6 +27,7 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
 }) => {
   const theme = useTheme();
   const { addToCart, state, updateQuantity } = useCart();
+  const { t, isRTL } = useTranslation();
   const [isAdded, setIsAdded] = useState(false);
   const [localQuantity, setLocalQuantity] = useState(1);
 
@@ -69,7 +71,7 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
         {/* Quantity Selector */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'center' }}>
           <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            Quantité:
+            {t('products.quantity')}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <IconButton
@@ -166,7 +168,7 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
             }),
           }}
         >
-          {isAdded ? 'Ajouté au panier !' : `Ajouter ${localQuantity} au panier`}
+          {isAdded ? t('product.addedToCart') : t('product.addQuantity', { quantity: localQuantity })}
         </Button>
       </motion.div>
     );
@@ -265,7 +267,7 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
           }),
         }}
       >
-        {isAdded ? 'Ajouté !' : 'Commander'}
+        {isAdded ? t('product.addedToCart') : t('common.order')}
       </Button>
     </motion.div>
   );

@@ -200,41 +200,7 @@ const Header: React.FC = () => {
 
   return (
     <>
-      {/* Top Contact Bar */}
-      <Box
-        ref={contactBarRef}
-        sx={{
-          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, #10b981 100%)`,
-          color: 'white',
-          py: 1,
-          display: { xs: 'none', md: 'block' },
-        }}
-      >
-          <Container maxWidth="xl">
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box sx={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Phone size={16} />
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    +213 123 456 789
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Mail size={16} />
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    contact@lilium-pharma.com
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <MapPin size={16} />
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  Algérie & Tunisie
-                </Typography>
-              </Box>
-            </Box>
-          </Container>
-        </Box>
+      {/* Top Contact Bar (disabled) */}
 
         <AppBar 
           ref={headerRef}

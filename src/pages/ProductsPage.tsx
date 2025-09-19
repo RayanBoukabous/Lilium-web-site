@@ -23,6 +23,7 @@ import {
   Slider,
   Paper,
   Divider,
+  alpha,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -51,6 +52,7 @@ import { formatPrice, getImageUrl, getCountriesNames } from '../services/api';
 import { productDescriptions, productBenefits } from '../data/productDescriptions';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Layout from '../components/Layout';
+import { useTranslation } from '../i18n';
 import AddToCartButton from '../components/AddToCartButton';
 
 const ProductsPage: React.FC = () => {
@@ -58,6 +60,7 @@ const ProductsPage: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { products, loading, error } = useProducts();
+  const { t, isRTL } = useTranslation();
 
   // États pour les filtres et la recherche
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,10 +68,18 @@ const ProductsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [priceRange, setPriceRange] = useState<number[]>([0, 5000]);
   const [selectedCountries, setSelectedCountries] = useState<number[]>([]);
-  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const [favorites, setFavorites] = useState<Set<number>>(() => {
+    try {
+      const raw = localStorage.getItem('favorites');
+      return new Set(raw ? (JSON.parse(raw) as number[]) : []);
+    } catch {
+      return new Set();
+    }
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
 
   // Catégories de produits
   const categories = [
@@ -83,6 +94,12 @@ const ProductsPage: React.FC = () => {
   ];
 
   const [selectedCategory, setSelectedCategory] = useState('all');
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('favorites', JSON.stringify(Array.from(favorites)));
+    } catch {}
+  }, [favorites]);
 
   // Pays disponibles
   const countries = [
@@ -104,8 +121,10 @@ const ProductsPage: React.FC = () => {
       // Filtre par pays
       const matchesCountry = selectedCountries.length === 0 || 
                             product.pays.some(country => selectedCountries.includes(country));
+      // Filtre favoris
+      const matchesFav = !onlyFavorites || favorites.has(product.id);
       
-      return matchesSearch && matchesPrice && matchesCountry;
+      return matchesSearch && matchesPrice && matchesCountry && matchesFav;
     });
 
     // Tri
@@ -122,7 +141,21 @@ const ProductsPage: React.FC = () => {
     });
 
     return filtered;
-  }, [products, searchTerm, priceRange, selectedCountries, sortBy]);
+  }, [products, searchTerm, priceRange, selectedCountries, sortBy, onlyFavorites, favorites]);
+
+  // Charger/Persister favoris via localStorage
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem('favorites');
+      if (raw) setFavorites(new Set(JSON.parse(raw)));
+    } catch {}
+  }, []);
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('favorites', JSON.stringify(Array.from(favorites)));
+    } catch {}
+  }, [favorites]);
 
   // Gestion des favoris
   const toggleFavorite = (productId: number) => {
@@ -192,61 +225,46 @@ const ProductsPage: React.FC = () => {
           minHeight: '100vh',
           backgroundColor: 'background.default',
           pt: { xs: 8, md: 10 },
+          direction: isRTL ? 'rtl' : 'ltr',
         }}
       >
-        {/* Hero Section */}
-        <Box
-          sx={{
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-            color: 'primary.contrastText',
-            py: { xs: 6, md: 8 },
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Background Pattern */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              opacity: 0.1,
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-          />
-          
-          <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-            >
-              <Typography
-                variant={isMobile ? 'h3' : 'h2'}
-                sx={{
-                  fontWeight: 700,
-                  textAlign: 'center',
-                  mb: 2,
-                  fontSize: { xs: '2.5rem', md: '3.5rem' },
-                }}
+        {/* Hero Section - Soft */}
+        <Box sx={{ py: { xs: 4, md: 6 } }}>
+          <Container maxWidth="xl">
+            <Box sx={{ textAlign: 'center' }}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
               >
-                Notre Catalogue
-              </Typography>
-              <Typography
-                variant="h6"
-                sx={{
-                  textAlign: 'center',
-                  opacity: 0.9,
-                  maxWidth: 600,
-                  mx: 'auto',
-                  fontSize: { xs: '1.1rem', md: '1.25rem' },
-                }}
-              >
-                Découvrez notre gamme complète de compléments alimentaires de qualité pharmaceutique
-              </Typography>
-            </motion.div>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                      border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <img src="/logo_main_white.png" alt="Lilium Pharma" style={{ width: 34, height: 34 }} />
+                  </Box>
+                </Box>
+                <Typography variant={isMobile ? 'h4' : 'h3'} sx={{ fontWeight: 800, mb: 1 }}>
+                  {t('products.headerTitle')}
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 700, mx: 'auto' }}>
+                  {t('products.headerSubtitle')}
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, mt: 2 }}>
+                  <Chip label={`${products.length} produits`} size="small" />
+                  <Chip label={`${favorites.size} favoris`} size="small" />
+                </Box>
+              </motion.div>
+            </Box>
           </Container>
         </Box>
 
@@ -260,10 +278,10 @@ const ProductsPage: React.FC = () => {
             <Paper
               elevation={0}
               sx={{
-                p: 3,
+                p: 2,
                 mb: 4,
-                borderRadius: 4,
-                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 6,
+                border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
                 backgroundColor: 'background.paper',
               }}
             >
@@ -272,7 +290,7 @@ const ProductsPage: React.FC = () => {
                   display: 'grid',
                   gridTemplateColumns: {
                     xs: '1fr',
-                    md: 'repeat(4, 1fr)',
+                    md: 'repeat(5, 1fr)',
                   },
                   gap: 3,
                   alignItems: 'center',
@@ -282,7 +300,7 @@ const ProductsPage: React.FC = () => {
                 <Box>
                   <TextField
                     fullWidth
-                    placeholder="Rechercher un produit..."
+                    placeholder={t('products.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     InputProps={{
@@ -291,6 +309,7 @@ const ProductsPage: React.FC = () => {
                           <Search size={20} color={theme.palette.primary.main} />
                         </InputAdornment>
                       ),
+                      inputProps: { dir: isRTL ? 'rtl' : 'ltr', style: { textAlign: isRTL ? 'right' : 'left' } },
                     }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
@@ -306,16 +325,16 @@ const ProductsPage: React.FC = () => {
                 {/* Tri */}
                 <Box>
                   <FormControl fullWidth>
-                    <InputLabel>Trier par</InputLabel>
+                    <InputLabel>{t('products.sortBy')}</InputLabel>
                     <Select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      label="Trier par"
+                      label={t('products.sortBy')}
                       startAdornment={<ArrowUpDown size={20} style={{ marginRight: 8 }} />}
                     >
-                      <MenuItem value="name">Nom (A-Z)</MenuItem>
-                      <MenuItem value="price-asc">Prix (Croissant)</MenuItem>
-                      <MenuItem value="price-desc">Prix (Décroissant)</MenuItem>
+                      <MenuItem value="name">{t('products.sort.name')}</MenuItem>
+                      <MenuItem value="price-asc">{t('products.sort.priceAsc')}</MenuItem>
+                      <MenuItem value="price-desc">{t('products.sort.priceDesc')}</MenuItem>
                     </Select>
                   </FormControl>
                 </Box>
@@ -371,8 +390,20 @@ const ProductsPage: React.FC = () => {
                       fontWeight: 600,
                     }}
                   >
-                    Filtres Avancés
+                    {t('products.filters.advanced')}
                   </Button>
+                </Box>
+
+                {/* Favoris uniquement */}
+                <Box sx={{ display: 'flex', justifyContent: { xs: 'start', md: 'end' } }}>
+                  <Chip
+                    label={t('products.favorites')}
+                    onClick={() => setOnlyFavorites(!onlyFavorites)}
+                    color={onlyFavorites ? 'primary' : 'default'}
+                    icon={<Heart size={16} />}
+                    sx={{ fontWeight: 600 }}
+                    variant={onlyFavorites ? 'filled' : 'outlined'}
+                  />
                 </Box>
               </Box>
 
@@ -399,7 +430,7 @@ const ProductsPage: React.FC = () => {
                       {/* Prix */}
                       <Box>
                         <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                          Prix: {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
+                          {t('products.filters.price')}: {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
                         </Typography>
                         <Slider
                           value={priceRange}
@@ -420,7 +451,7 @@ const ProductsPage: React.FC = () => {
                       {/* Pays */}
                       <Box>
                         <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                          Pays
+                          {t('products.filters.countries')}
                         </Typography>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                           {countries.map((country) => (
@@ -450,7 +481,7 @@ const ProductsPage: React.FC = () => {
                       {/* Catégories */}
                       <Box>
                         <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                          Catégories
+                          {t('products.filters.categories')}
                         </Typography>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                           {categories.slice(0, 4).map((category) => (
@@ -480,7 +511,7 @@ const ProductsPage: React.FC = () => {
           {/* Résultats */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-              {filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''} trouvé{filteredProducts.length > 1 ? 's' : ''}
+              {t('products.resultsCount', { count: filteredProducts.length })}
             </Typography>
           </Box>
 
@@ -535,7 +566,8 @@ const ProductsPage: React.FC = () => {
                           sx={{
                             position: 'absolute',
                             top: 12,
-                            right: 12,
+                            right: isRTL ? 'auto' : 12,
+                            left: isRTL ? 12 : 'auto',
                             zIndex: 2,
                             backgroundColor: 'background.paper',
                             boxShadow: 2,
@@ -561,7 +593,8 @@ const ProductsPage: React.FC = () => {
                           sx={{
                             position: 'absolute',
                             top: 12,
-                            left: 12,
+                            left: isRTL ? 'auto' : 12,
+                            right: isRTL ? 12 : 'auto',
                             zIndex: 2,
                             backgroundColor: 'primary.main',
                             color: 'primary.contrastText',
@@ -635,9 +668,10 @@ const ProductsPage: React.FC = () => {
                           display: 'flex', 
                           flexDirection: 'column',
                           minHeight: 320,
+                          textAlign: isRTL ? 'right' : 'left',
                         }}>
                           {/* Titre du produit */}
-                          <Typography
+                            <Typography
                             variant="h6"
                             sx={{
                               fontWeight: 600,
@@ -649,7 +683,8 @@ const ProductsPage: React.FC = () => {
                               display: '-webkit-box',
                               WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
+                                overflow: 'hidden',
+                                textAlign: isRTL ? 'right' : 'left',
                             }}
                           >
                             {product.fname}
@@ -667,6 +702,7 @@ const ProductsPage: React.FC = () => {
                               WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
                               overflow: 'hidden',
+                              textAlign: isRTL ? 'right' : 'left',
                             }}
                           >
                             {productDescriptions[product.fname] || product.nom}
@@ -744,8 +780,8 @@ const ProductsPage: React.FC = () => {
 
                           {/* Contrôle de quantité */}
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, minHeight: 40 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              Quantité:
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {t('products.quantity')}
                             </Typography>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <IconButton
@@ -790,6 +826,13 @@ const ProductsPage: React.FC = () => {
                               fullWidth
                             />
                           </Box>
+                          <Button
+                            variant="text"
+                            onClick={(e) => { e.stopPropagation(); navigate(`/product/${product.id}`); }}
+                            sx={{ mt: 1, textTransform: 'none', fontWeight: 600, color: 'primary.main' }}
+                          >
+                            {t('common.viewMore')}
+                          </Button>
                         </CardContent>
                       </Card>
                 </motion.div>

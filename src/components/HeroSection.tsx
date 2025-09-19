@@ -11,7 +11,7 @@ import {
   Chip,
   Stack,
 } from '@mui/material';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
   Shield, 
@@ -33,11 +33,16 @@ const HeroSection: React.FC = () => {
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
   const { t } = useTranslation();
 
+  const prefersReducedMotion = useReducedMotion();
+
+  // Single, brand-aligned accent color derived from theme
+  const accent = theme.palette.primary.main;
+
   const features = [
-    { icon: Shield, text: t('hero.features.quality'), color: '#10b981', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' },
-    { icon: Award, text: t('hero.features.premium'), color: '#f59e0b', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' },
-    { icon: Users, text: t('hero.features.expertise'), color: '#3b82f6', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' },
-    { icon: Heart, text: t('hero.features.health'), color: '#ef4444', gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' },
+    { icon: Shield, text: t('hero.features.quality') },
+    { icon: Award, text: t('hero.features.premium') },
+    { icon: Users, text: t('hero.features.expertise') },
+    { icon: Heart, text: t('hero.features.health') },
   ];
 
 
@@ -53,10 +58,9 @@ const HeroSection: React.FC = () => {
       id="home"
       sx={{
         background: `
-          radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-          radial-gradient(circle at 40% 40%, rgba(245, 158, 11, 0.05) 0%, transparent 50%),
-          linear-gradient(135deg, ${theme.palette.background.default} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)
+          radial-gradient(circle at 20% 80%, ${alpha(accent, 0.10)} 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, ${alpha(accent, 0.08)} 0%, transparent 50%),
+          linear-gradient(135deg, ${theme.palette.background.default} 0%, ${alpha(accent, 0.04)} 100%)
         `,
         minHeight: '100vh',
         display: 'flex',
@@ -75,9 +79,8 @@ const HeroSection: React.FC = () => {
           bottom: 0,
           opacity: 0.1,
           backgroundImage: `
-            radial-gradient(circle at 25% 25%, #10b981 2px, transparent 2px),
-            radial-gradient(circle at 75% 75%, #3b82f6 2px, transparent 2px),
-            radial-gradient(circle at 50% 50%, #f59e0b 1px, transparent 1px)
+            radial-gradient(circle at 25% 25%, ${alpha(accent, 0.8)} 2px, transparent 2px),
+            radial-gradient(circle at 75% 75%, ${alpha(accent, 0.5)} 2px, transparent 2px)
           `,
           backgroundSize: '100px 100px, 150px 150px, 200px 200px',
           animation: 'float 20s ease-in-out infinite',
@@ -85,7 +88,7 @@ const HeroSection: React.FC = () => {
       />
       
       {/* Floating Particles */}
-      <FloatingParticles />
+      {!prefersReducedMotion && <FloatingParticles />}
 
       <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, py: 8 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', minHeight: '80vh' }}>
@@ -102,11 +105,11 @@ const HeroSection: React.FC = () => {
                       gap: 2,
                       px: 4,
                       py: 2,
-                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, #10b981 100%)`,
-                      color: 'white',
+                      background: `linear-gradient(135deg, ${accent} 0%, ${alpha(accent, 0.85)} 100%)`,
+                      color: '#ffffff',
                       borderRadius: 6,
-                      boxShadow: `0 12px 40px ${alpha(theme.palette.primary.main, 0.3)}`,
-                      border: `2px solid ${alpha(theme.palette.primary.light, 0.3)}`,
+                      boxShadow: `0 12px 40px ${alpha(accent, 0.25)}`,
+                      border: `2px solid ${alpha(accent, 0.35)}`,
                       position: 'relative',
                       overflow: 'hidden',
                       mb: 4,
@@ -117,30 +120,34 @@ const HeroSection: React.FC = () => {
                         left: '-100%',
                         width: '100%',
                         height: '100%',
-                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                        animation: 'shimmer 2s infinite',
+                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+                        animation: prefersReducedMotion ? 'none' : 'shimmer 2.2s infinite',
                       },
                     }}
                   >
-                    <motion.div
-                      animate={{ rotate: [0, 360] }}
-                      transition={{ 
-                        duration: 8, 
-                        repeat: Infinity, 
-                        ease: "linear",
-                      }}
-                    >
+                    {!prefersReducedMotion ? (
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                      >
+                        <Crown size={24} />
+                      </motion.div>
+                    ) : (
                       <Crown size={24} />
-                    </motion.div>
+                    )}
                     <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
                       {t('hero.badge')}
                     </Typography>
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
+                    {!prefersReducedMotion ? (
+                      <motion.div
+                        animate={{ scale: [1, 1.15, 1] }}
+                        transition={{ duration: 2.4, repeat: Infinity }}
+                      >
+                        <Sparkles size={20} />
+                      </motion.div>
+                    ) : (
                       <Sparkles size={20} />
-                    </motion.div>
+                    )}
                   </Box>
                 </SmoothAnimation>
 
@@ -164,7 +171,7 @@ const HeroSection: React.FC = () => {
                         variant={isMobile ? 'h3' : isTablet ? 'h2' : 'h1'}
                         sx={{
                           fontWeight: 800,
-                          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, #10b981 50%, #3b82f6 100%)`,
+                          background: `linear-gradient(135deg, ${accent} 0%, ${alpha(accent, 0.85)} 100%)`,
                           backgroundClip: 'text',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
@@ -215,19 +222,19 @@ const HeroSection: React.FC = () => {
                   <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
                     {features.map((feature, index) => (
                       <Box key={feature.text}>
-                        <SmoothAnimation direction="up" delay={0.6 + index * 0.05} duration={0.4}>
+                        <SmoothAnimation direction="up" delay={0.55 + index * 0.05} duration={0.4}>
                           <Card
                             sx={{
                               p: 3,
                               height: '100%',
-                              background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.8)} 0%, ${alpha(feature.color, 0.05)} 100%)`,
-                              border: `2px solid ${alpha(feature.color, 0.2)}`,
+                              background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)} 0%, ${alpha(accent, 0.04)} 100%)`,
+                              border: `1px solid ${alpha(accent, 0.18)}`,
                               borderRadius: 4,
                               transition: 'all 0.3s ease',
                               '&:hover': {
-                                transform: 'translateY(-4px)',
-                                boxShadow: `0 12px 40px ${alpha(feature.color, 0.2)}`,
-                                border: `2px solid ${alpha(feature.color, 0.4)}`,
+                                transform: 'translateY(-3px)',
+                                boxShadow: `0 12px 38px ${alpha(accent, 0.2)}`,
+                                border: `1px solid ${alpha(accent, 0.35)}`,
                               },
                             }}
                           >
@@ -236,8 +243,8 @@ const HeroSection: React.FC = () => {
                                 sx={{
                                   p: 1.5,
                                   borderRadius: 3,
-                                  background: feature.gradient,
-                                  color: 'white',
+                                  background: `linear-gradient(135deg, ${accent} 0%, ${alpha(accent, 0.85)} 100%)`,
+                                  color: '#ffffff',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -299,11 +306,11 @@ const HeroSection: React.FC = () => {
                         fontSize: '1.2rem',
                         borderRadius: 4,
                         fontWeight: 700,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, #10b981 100%)`,
-                        boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.3)}`,
+                          background: `linear-gradient(135deg, ${accent} 0%, ${alpha(accent, 0.85)} 100%)`,
+                          boxShadow: `0 8px 30px ${alpha(accent, 0.3)}`,
                         '&:hover': {
-                          background: `linear-gradient(135deg, #10b981 0%, ${theme.palette.primary.main} 100%)`,
-                          boxShadow: `0 12px 40px ${alpha(theme.palette.primary.main, 0.4)}`,
+                          background: `linear-gradient(135deg, ${alpha(accent, 0.9)} 0%, ${accent} 100%)`,
+                          boxShadow: `0 12px 40px ${alpha(accent, 0.4)}`,
                           transform: 'translateY(-2px)',
                         },
                       }}
@@ -321,12 +328,12 @@ const HeroSection: React.FC = () => {
                         fontSize: '1.2rem',
                         borderRadius: 4,
                         fontWeight: 700,
-                        border: `3px solid ${theme.palette.primary.main}`,
-                        color: theme.palette.primary.main,
+                        border: `3px solid ${accent}`,
+                        color: accent,
                         '&:hover': {
-                          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha('#10b981', 0.1)} 100%)`,
-                          border: `3px solid #10b981`,
-                          color: '#10b981',
+                          background: `linear-gradient(135deg, ${alpha(accent, 0.08)} 0%, ${alpha(accent, 0.16)} 100%)`,
+                          border: `3px solid ${accent}`,
+                          color: accent,
                           transform: 'translateY(-2px)',
                         },
                       }}

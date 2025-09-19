@@ -53,6 +53,18 @@ const ProductPage: React.FC = () => {
     }
   }, [products, id]);
 
+  // Charger/Persister favoris
+  useEffect(() => {
+    if (!product) return;
+    try {
+      const raw = localStorage.getItem('favorites');
+      if (raw) {
+        const set = new Set(JSON.parse(raw) as number[]);
+        setIsFavorite(set.has(product.id));
+      }
+    } catch {}
+  }, [product?.id]);
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -78,7 +90,7 @@ const ProductPage: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<ArrowBack />}
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/products')}
           >
             {t('product.backToHome')}
           </Button>
@@ -92,7 +104,17 @@ const ProductPage: React.FC = () => {
   const benefits = productBenefits[productName] || [];
 
   const handleFavoriteToggle = () => {
-    setIsFavorite(!isFavorite);
+    if (!product) return;
+    setIsFavorite(prev => {
+      const next = !prev;
+      try {
+        const raw = localStorage.getItem('favorites');
+        const set = new Set(raw ? (JSON.parse(raw) as number[]) : []);
+        if (next) set.add(product.id); else set.delete(product.id);
+        localStorage.setItem('favorites', JSON.stringify(Array.from(set)));
+      } catch {}
+      return next;
+    });
   };
 
   const handleShare = async () => {
@@ -144,7 +166,7 @@ const ProductPage: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Button
               startIcon={<ArrowBack />}
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/products')}
               sx={{
                 background: alpha(theme.palette.primary.main, 0.1),
                 '&:hover': {

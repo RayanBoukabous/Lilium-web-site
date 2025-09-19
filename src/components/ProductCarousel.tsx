@@ -16,6 +16,8 @@ import {
   Rating,
   Skeleton,
   Fab,
+  alpha,
+  Button,
 } from '@mui/material';
 import {
   Heart,
@@ -36,6 +38,7 @@ import { formatPrice, getImageUrl, getCountriesNames } from '../services/api';
 import AddToCartButton from './AddToCartButton';
 import type { Product } from '../types';
 import { gsap } from 'gsap';
+import { Link } from 'react-router-dom';
 
 const ProductCarousel: React.FC = () => {
   const theme = useTheme();
@@ -50,6 +53,8 @@ const ProductCarousel: React.FC = () => {
   const [wishlist, setWishlist] = useState<Set<number>>(new Set());
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [hoveredProduct, setHoveredProduct] = useState<number | null>(null);
+  const [swipeStartX, setSwipeStartX] = useState<number | null>(null);
+  const [swipeDeltaX, setSwipeDeltaX] = useState(0);
 
   // Refs
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -125,6 +130,47 @@ const ProductCarousel: React.FC = () => {
       });
     });
   }, [isTransitioning]);
+
+  // Handlers swipe tactile (mobile) – fluide sans clignotement
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isTransitioning) return;
+    const x = e.touches[0].clientX;
+    setSwipeStartX(x);
+    setSwipeDeltaX(0);
+    // petit pulse des cartes
+    productsRef.current.forEach((ref) => {
+      if (ref) gsap.to(ref, { boxShadow: `0 12px 24px ${theme.palette.primary.main}22`, duration: 0.2 });
+    });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (swipeStartX === null) return;
+    const currentX = e.touches[0].clientX;
+    const delta = currentX - swipeStartX;
+    setSwipeDeltaX(delta);
+    productsRef.current.forEach((ref) => {
+      if (ref) gsap.set(ref, { x: delta * 0.15, opacity: 1, force3D: true });
+    });
+  };
+
+  const handleTouchEnd = () => {
+    if (swipeStartX === null) return;
+    const delta = swipeDeltaX;
+    setSwipeStartX(null);
+    setSwipeDeltaX(0);
+    if (Math.abs(delta) > 50) {
+      if (delta < 0) {
+        nextSlide();
+      } else {
+        prevSlide();
+      }
+    } else {
+      // revenir en place
+      productsRef.current.forEach((ref) => {
+        if (ref) gsap.to(ref, { x: 0, duration: 0.25, ease: 'power2.out' });
+      });
+    }
+  };
 
   // Navigation
   const nextSlide = useCallback(() => {
@@ -245,8 +291,33 @@ const ProductCarousel: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 6 }}>
-      {/* Header Enterprise */}
+    <Box
+      sx={{
+        position: 'relative',
+        overflow: 'hidden',
+        background: `
+          radial-gradient(circle at 20% 80%, ${alpha(theme.palette.primary.main, 0.10)} 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, ${alpha(theme.palette.primary.main, 0.08)} 0%, transparent 50%),
+          linear-gradient(135deg, ${theme.palette.background.default} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)
+        `,
+        py: { xs: 6, md: 10 },
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          opacity: 0.08,
+          backgroundImage: `
+            radial-gradient(circle at 25% 25%, ${alpha(theme.palette.primary.main, 0.8)} 2px, transparent 2px),
+            radial-gradient(circle at 75% 75%, ${alpha(theme.palette.primary.main, 0.5)} 2px, transparent 2px)
+          `,
+          backgroundSize: '100px 100px, 150px 150px',
+          animation: 'float 20s ease-in-out infinite',
+        }}
+      />
+      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
+      {/* Header */}
       <Box sx={{ textAlign: 'center', mb: 6 }}>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -264,10 +335,10 @@ const ProductCarousel: React.FC = () => {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Produits Vedettes
+            Nos Produits
           </Typography>
           <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-            Découvrez nos produits premium avec notre technologie IA avancée
+            Découvrez nos produits premium
           </Typography>
         </motion.div>
       </Box>
@@ -278,8 +349,8 @@ const ProductCarousel: React.FC = () => {
           position: 'relative',
           overflow: 'hidden',
           borderRadius: 4,
-          background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.primary.light}05 100%)`,
-          border: `1px solid ${theme.palette.primary.light}20`,
+          background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)`,
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
           p: 4,
         }}
       >
@@ -293,11 +364,11 @@ const ProductCarousel: React.FC = () => {
             top: '50%',
             transform: 'translateY(-50%)',
             zIndex: 10,
-            backgroundColor: 'rgba(255,255,255,0.9)',
+            backgroundColor: `${alpha(theme.palette.background.paper, 0.9)}`,
             backdropFilter: 'blur(10px)',
-            border: `1px solid ${theme.palette.primary.light}`,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
             '&:hover': {
-              backgroundColor: 'white',
+              backgroundColor: theme.palette.background.paper,
               transform: 'translateY(-50%) scale(1.1)',
             },
             transition: 'all 0.3s ease',
@@ -315,11 +386,11 @@ const ProductCarousel: React.FC = () => {
             top: '50%',
             transform: 'translateY(-50%)',
             zIndex: 10,
-            backgroundColor: 'rgba(255,255,255,0.9)',
+            backgroundColor: `${alpha(theme.palette.background.paper, 0.9)}`,
             backdropFilter: 'blur(10px)',
-            border: `1px solid ${theme.palette.primary.light}`,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
             '&:hover': {
-              backgroundColor: 'white',
+              backgroundColor: theme.palette.background.paper,
               transform: 'translateY(-50%) scale(1.1)',
             },
             transition: 'all 0.3s ease',
@@ -359,7 +430,11 @@ const ProductCarousel: React.FC = () => {
             transformStyle: 'preserve-3d',
             backfaceVisibility: 'hidden',
             willChange: 'transform',
+            touchAction: 'pan-y',
           }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           {displayProducts.map((product, index) => (
             <Box
@@ -380,10 +455,10 @@ const ProductCarousel: React.FC = () => {
                     height: '100%',
                     position: 'relative',
                     overflow: 'hidden',
-                    border: `2px solid ${theme.palette.primary.light}`,
+                    border: `2px solid ${alpha(theme.palette.primary.main, 0.25)}`,
                     borderRadius: 4,
-                    background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.primary.light}05 100%)`,
-                    boxShadow: `0 8px 32px ${theme.palette.primary.light}20`,
+                    background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)`,
+                    boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.15)}`,
                     transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                     cursor: 'pointer',
                     transformStyle: 'preserve-3d',
@@ -391,8 +466,8 @@ const ProductCarousel: React.FC = () => {
                     willChange: 'transform, box-shadow',
                     '&:hover': {
                       transform: 'translateY(-8px) scale(1.01)',
-                      boxShadow: `0 16px 32px ${theme.palette.primary.main}25`,
-                      borderColor: theme.palette.primary.main,
+                      boxShadow: `0 16px 32px ${alpha(theme.palette.primary.main, 0.25)}`,
+                      borderColor: alpha(theme.palette.primary.main, 0.7),
                     },
                   }}
                   onMouseEnter={() => setHoveredProduct(product.id)}
@@ -450,7 +525,7 @@ const ProductCarousel: React.FC = () => {
                       sx={{
                         height: '100%',
                         objectFit: 'contain',
-                        backgroundColor: theme.palette.grey[50],
+                        backgroundColor: alpha(theme.palette.text.primary, 0.05),
                         p: 2,
                         transition: 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                         willChange: 'transform',
@@ -478,7 +553,7 @@ const ProductCarousel: React.FC = () => {
                         <Tooltip title="Aperçu rapide">
                           <IconButton
                             size="small"
-                            sx={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
+                            sx={{ backgroundColor: `${alpha(theme.palette.background.paper, 0.9)}` }}
                             onClick={(e) => {
                               e.stopPropagation();
                               openQuickView(product);
@@ -491,7 +566,7 @@ const ProductCarousel: React.FC = () => {
                         <Tooltip title="Ajouter au panier">
                           <IconButton
                             size="small"
-                            sx={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
+                            sx={{ backgroundColor: `${alpha(theme.palette.background.paper, 0.9)}` }}
                           >
                             <ShoppingCart size={16} />
                           </IconButton>
@@ -575,6 +650,19 @@ const ProductCarousel: React.FC = () => {
                         variant="contained"
                         size="small"
                       />
+                    </Box>
+
+                    {/* Voir plus */}
+                    <Box sx={{ mt: 2, textAlign: 'right' }}>
+                      <Button
+                        component={Link}
+                        to={`/product/${product.id}`}
+                        variant="text"
+                        size="small"
+                        sx={{ fontWeight: 600, color: theme.palette.primary.main, textTransform: 'none' }}
+                      >
+                        Voir plus
+                      </Button>
                     </Box>
                   </CardContent>
                 </Card>
@@ -686,7 +774,14 @@ const ProductCarousel: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </Container>
+      </Container>
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(180deg); }
+        }
+      `}</style>
+    </Box>
   );
 };
 
